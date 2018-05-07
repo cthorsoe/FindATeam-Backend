@@ -1,0 +1,23 @@
+{
+  "name": "find-a-team-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "dependencies": {
+    "express":"4.16.3",
+    "cors":"2.8.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cthorsoe/FindATeam-Backend.git"
+  },
+  "author": "Christian Thorsø",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cthorsoe/FindATeam-Backend/issues"
+  },
+  "homepage": "https://github.com/cthorsoe/FindATeam-Backend#readme"
+}
