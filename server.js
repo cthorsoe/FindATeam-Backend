@@ -12,6 +12,14 @@ app.listen(3333, err => {
   console.log('ok')
 });
 
+app.get('/get-user/:username', (req, res) => {
+  let user = JSON.parse('{"firstname":"Christian","lastname":"Thorsø","email":"christian@thorsoe.dk","dateofbirth":"1995-10-09"}');
+  user.username = req.params.username;
+  user.description = 'My description';
+  user.role = "Leader";
+  return res.send(JSON.stringify(user));
+});
+
 app.get('/get-users', (req, res) => {
   return res.send('[{"firstname":"Christian","lastname":"Thorsø","username":"cthorsoe","email":"christian@thorsoe.dk","dateofbirth":"1995-10-09"}]')
 });
