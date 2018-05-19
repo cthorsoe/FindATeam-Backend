@@ -7,10 +7,12 @@ jFunctions.formatDate = date => {
     return moment(date).format('DD-MM-YYYY');
 }
   
-jFunctions.genRandomString = function(iLength){
-    return crypto.randomBytes(Math.ceil(iLength/2))
-            .toString('hex') /** convert to hexadecimal format */
-            .slice(0,iLength);   /** return required number of characters */
+jFunctions.genRandomString = function(iLength, bUpperCase = false){
+    let = sRandomString = crypto.randomBytes(Math.ceil(iLength/2)).toString('hex').slice(0,iLength);
+    if(bUpperCase){
+        sRandomString = sRandomString.toUpperCase();
+    }
+    return sRandomString
 };
   
 jFunctions.sha512 = function(sInput, sSalt){

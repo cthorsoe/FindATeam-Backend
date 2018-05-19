@@ -122,4 +122,39 @@ router.get('/get-my-teams/:username', (req, res) => {
     })
 });
 
+router.get('/verify-email/:verificationstring', (req, res) => {
+    console.log('ROUTER HIT')
+    // return res.send('ok')
+    const verificationstring = req.params.verificationstring
+    usersController.verifyUserEmail(verificationstring, (err) => {
+        if(err){
+
+        }
+        const sFilePath = global.path.join(__dirname, '../', 'email-verified.html');
+        global.fs.readFile(sFilePath, 'utf8', (err, sHTML) => {
+            if(err){
+                console.log('err', err)
+            }
+            return res.send(sHTML)
+        })
+    })
+})
+
+router.post('verify-phone', (req, res) => {
+    const jVerifyPhoneForm = req.body;
+    usersController.verifyUserPhone(jVerifyPhoneForm.code, jVerifyPhoneForm.id, (err, jResult) => {
+        if(err){
+            return res.send('FAIL')
+        }
+        return res.send('VERIFIED')
+    })
+})
+
+
+router.get('/sendsms', (req, res) => {
+    usersController.sendSMS()
+
+    return res.send('ok')
+})
+
 module.exports = router

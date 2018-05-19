@@ -1,6 +1,8 @@
+const nodemailer = require('nodemailer')
+
 let usersController = {}
-let sQuery;
-let aParams;
+let sQuery = "";
+let aParams = [];
 
 usersController.createUser = (jUser, fCallback)=>{
     if(jUser.password == jUser.passwordConfirm){
@@ -17,7 +19,14 @@ usersController.createUser = (jUser, fCallback)=>{
                 return fCallback(true)
             }
             if(jResult.affectedRows == 1){
-                return fCallback(false, jResult)
+                jUser.id = jResult.insertId
+                sendVerificationEmail(jUser)
+                if(jUser.phone && jUser.phone.length == 8){
+                    const sVerificationCode = global.functions.genRandomString(4, true)
+                    sendVerificationSMS(jUser.id, jUser.phone, sVerificationCode)
+                    jUser.code = sVerificationCode
+                }
+                return fCallback(false, jUser)
             }
             return fCallback(true)
         }) 
@@ -166,6 +175,7 @@ usersController.deleteLoginSession = (iSessionId, fCallback) => {
         return fCallback(false, jResult)
     })
 }
+
 usersController.getMyTeams = (sUsername, fCallback) => {
     aParams = [true, sUsername]
     sQuery = `SELECT teams.id AS teamId, teams.name, users.id AS userId, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.phone 
@@ -186,6 +196,114 @@ usersController.getMyTeams = (sUsername, fCallback) => {
         ajPreparedTeams = global.functions.prepareTeamsWithMembers(result);
         // return res.send(ajPreparedTeams);
         return fCallback(false, ajPreparedTeams)
+    })
+}
+
+usersController.verifyUserEmail = (sVerificationString, fCallback) =>{
+    aParams = [true, sVerificationString];
+    sQuery = 'UPDATE users SET emailconfirmed = ? WHERE emailconfirmstring = ?'
+    db.query(sQuery, aParams, (err, jResult) => {
+        if(err){
+            return fCallback(true)
+        }
+        console.log(jResult);
+        if(jResult.affectedRows == 1){
+            return fCallback(false)
+        }
+        return fCallback(true)
+    })
+}
+
+usersController.verifyUserPhone = (sCodeInput, iUserId, fCallback) => {
+    aParams = [true, iUserId, sCodeInput];
+    sQuery = 'UPDATE users SET phoneconfirmed = ? WHERE id = ? AND phoneconfirmstring = ?'
+    db.query(sQuery, aParams, (err, jResult) => {
+        if(err){
+            return fCallback(true)
+        }
+        console.log(jResult);
+        if(jResult.affectedRows == 1){
+            return fCallback(false, jResult)
+        }
+        return fCallback(true)
+    })
+}
+
+usersController.sendSMS = () => {
+    sendVerificationSMS(4, '20283907')
+}
+
+const sendVerificationSMS = (iUserId, sPhone, sVerificationCode) => {
+    addConfirmationPhoneCodeToUser(iUserId, sVerificationCode)
+    var jSmsesData = {
+        "apiToken":sSmsesIoApiToken,
+        "mobile":sPhone,
+        "message":"Your confirmation code is: " + sVerificationCode
+    };
+    request.post('http://smses.io/api-send-sms.php', {
+        form: jSmsesData
+    });
+}
+
+const sendVerificationEmail = (jUser) =>{
+    console.log('jUser', jUser);
+    
+    const transporter = createTransporter();
+    const sFilePath = global.path.join(__dirname, '../', '/verification-email.html')
+    console.log(sFilePath);
+    global.fs.readFile(sFilePath, 'utf8', (err, sVerificationHTML) => {
+        console.log('HTML', sVerificationHTML)
+        const sVerificationString = global.functions.genRandomString(32)
+        addConfirmationStringToUser(jUser.id, sVerificationString)
+        sVerificationHTML = sVerificationHTML.replace('{{verification-link}}', 'http://localhost:3333/users/verify-email/' + sVerificationString)
+        
+        const mailOptions = {
+            from: 'Team Up! <teamupwebsite@gmail.com>',
+            to: jUser.email,
+            subject: 'Welcome to Team Up! Verify your email here!',
+            html: sVerificationHTML
+        };
+        
+        transporter.sendMail(mailOptions, function(error, info){
+            if (error) {
+                console.log(error);
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        });
+    })
+}
+
+const createTransporter = () => {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'teamupwebsite@gmail.com',
+          pass: 'TeamUpWebsite123'
+        }
+    });
+
+    return transporter
+}
+
+const addConfirmationStringToUser = (iUserId, sVerificationString, fCallback="") => {
+    aParams = [sVerificationString, iUserId];
+    sQuery = 'UPDATE users SET emailconfirmstring = ? WHERE id = ?'
+    db.query(sQuery, aParams, (err, jResult) => {
+        console.log(jResult);
+        if(jResult.affectedRows == 1){
+            // return fCallback(false, jResult)
+        }
+        // return fCallback(true)
+    })
+}
+const addConfirmationPhoneCodeToUser = (iUserId, sConfirmationCode) => {
+    aParams = [sConfirmationCode, iUserId];
+    sQuery = 'UPDATE users SET phoneconfirmstring = ? WHERE id = ?'
+    db.query(sQuery, aParams, (err, jResult) => {
+        console.log(jResult);
+        if(jResult.affectedRows == 1){
+        }
     })
 }
 
