@@ -1,7 +1,9 @@
 global.express = require('express')
 const app = express()
+const fs = require('fs')
 const bodyParser = require("body-parser")
 const cors = require('cors') // To allow requests from different domains.
+
 
 const usersRouter = require('./routes/users');
 const teamsRouter = require('./routes/teams');
@@ -22,3 +24,12 @@ app.listen(3333, err => {
   }
   console.log('ok')
 }); 
+
+app.get('/', (req, res) => {
+    fs.readFile(__dirname + '/index.html', 'utf8', (err, sIndexHTML) => {
+        if(err){
+
+        }
+        return res.send(sIndexHTML)
+    })
+})

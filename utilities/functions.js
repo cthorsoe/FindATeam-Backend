@@ -3,7 +3,6 @@ const moment = require('moment')
 
 let jFunctions = {};
 
-
 jFunctions.formatDate = date => {
     return moment(date).format('DD-MM-YYYY');
 }
