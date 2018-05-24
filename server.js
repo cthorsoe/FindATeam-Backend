@@ -1,7 +1,5 @@
 global.express = require('express')
 const app = express()
-const http = require('http').Server(app);
-const io = require('socket.io')(http);
 global.fs = require('fs')
 global.path = require('path')
 global.request = require('request')
@@ -38,14 +36,3 @@ app.get('/', (req, res) => {
         return res.send(sIndexHTML)
     })
 })
-
-io.on('connection', function(socket){
-    sMessage = 'a user connected ' + socket.id;
-    console.log(sMessage);
-    
-    socket.on('button clicked', function(msg){
-       console.log(msg);
-       // io.emit('message', { msg: sMessage });
-       socket.broadcast.emit('message', { msg: msg.msg });
-    });
- });
