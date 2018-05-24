@@ -1,5 +1,7 @@
 global.express = require('express')
 const app = express()
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 global.fs = require('fs')
 global.path = require('path')
 global.request = require('request')
@@ -29,10 +31,21 @@ app.listen(3333, err => {
 }); 
 
 app.get('/', (req, res) => {
-    global.fs.readFile(__dirname + '/index.html', 'utf8', (err, sIndexHTML) => {
+    global.fs.readFile(__dirname + '/views/index.html', 'utf8', (err, sIndexHTML) => {
         if(err){
 
         }
         return res.send(sIndexHTML)
     })
 })
+
+io.on('connection', function(socket){
+    sMessage = 'a user connected ' + socket.id;
+    console.log(sMessage);
+    
+    socket.on('button clicked', function(msg){
+       console.log(msg);
+       // io.emit('message', { msg: sMessage });
+       socket.broadcast.emit('message', { msg: msg.msg });
+    });
+ });

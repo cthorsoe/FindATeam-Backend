@@ -3,6 +3,8 @@ const nodemailer = require('nodemailer')
 let usersController = {}
 let sQuery = "";
 let aParams = [];
+let jError = {};
+let jSuccess = { status: 'success'}
 
 usersController.createUser = (jUser, fCallback)=>{
     if(jUser.password == jUser.passwordConfirm){
@@ -58,14 +60,28 @@ usersController.deleteUser = (sUsername, fCallback)=>{
 
 usersController.getUserByUserName = (sUsername, fCallback)=>{
     sQuery = 'SELECT users.id, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.phone, users.description FROM users WHERE username = ?'
-    db.query(sQuery, sUsername, (err, ajData) => {
-        if(ajData.length == 1){
-            const jUser = ajData[0];
+    db.query(sQuery, sUsername, (err, ajUsers) => {
+        if(err){
+            jError = global.functions.createError(
+                '001', 
+                'controllers/users.js --> getUserByUserName --> DB Query Error',
+                'An error occured when executing the query on the database',
+                err
+            );
+            return fCallback(jError);
+        }
+        if(ajUsers.length == 1){
+            const jUser = ajUsers[0];
             return fCallback(false, jUser)
         }
-        return fCallback(true);
+        jError = global.functions.createError(
+            '003', 
+            'controllers/users.js --> getUserByUserName --> Unexpected response',
+            'Found either 0 or multiple results when 1 was expected'
+        );
+        return fCallback(jError);
     })
-};
+}
 
 
 usersController.getTeamInvitesCount = (sUsername, fCallback)=>{
@@ -109,9 +125,13 @@ usersController.listUser = (jUser, fCallback)=>{
 
 
 usersController.tryLogin = (jLoginForm, fCallback)=>{
-    sQuery = `SELECT passwordsalt, passwordhash, id, firstname, lastname, username, dateofbirth, email, playerrole, avatar, description FROM users WHERE username = ?`
+    sQuery =    `SELECT users.passwordsalt, users.passwordhash, users.id, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.description, userroles.role 
+                 FROM users  
+                 INNER JOIN userroles ON users.userrole = userroles.id
+                 WHERE users.username = ?`
     db.query(sQuery, jLoginForm.username, (err, ajUsers) => {
       if(err){
+          console.log('ERR', err)
         return fCallback(true)
       }
       if(ajUsers.length == 1){
@@ -144,7 +164,7 @@ usersController.tryLogin = (jLoginForm, fCallback)=>{
 
 usersController.tryLoginBySession = (jSessionData, fCallback)=>{
     const iSessionId = parseInt(jSessionData.sessionId);
-    sQuery = 'SELECT loginsessions.id as sessionId, loginsessions.sessionhash, users.id, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.description FROM loginsessions INNER JOIN users ON users.id = loginsessions.user WHERE loginsessions.id = ?'
+    sQuery = 'SELECT loginsessions.id as sessionId, loginsessions.sessionhash, users.id, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.description, userroles.role FROM loginsessions INNER JOIN users ON users.id = loginsessions.user INNER JOIN userroles ON users.userrole = userroles.id WHERE loginsessions.id = ?'
     db.query(sQuery, iSessionId, (err, ajUsers) => {
         if(err){
             return fCallback(true)
@@ -235,24 +255,23 @@ usersController.sendSMS = () => {
 
 const sendVerificationSMS = (iUserId, sPhone, sVerificationCode) => {
     addConfirmationPhoneCodeToUser(iUserId, sVerificationCode)
+
     var jSmsesData = {
         "apiToken":sSmsesIoApiToken,
         "mobile":sPhone,
         "message":"Your confirmation code is: " + sVerificationCode
-    };
+    }
+    
     request.post('http://smses.io/api-send-sms.php', {
         form: jSmsesData
-    });
+    })
 }
 
 const sendVerificationEmail = (jUser) =>{
-    console.log('jUser', jUser);
-    
     const transporter = createTransporter();
-    const sFilePath = global.path.join(__dirname, '../', '/verification-email.html')
+    const sFilePath = global.path.join(__dirname, '../', '/views/verification-email.html')
     console.log(sFilePath);
     global.fs.readFile(sFilePath, 'utf8', (err, sVerificationHTML) => {
-        console.log('HTML', sVerificationHTML)
         const sVerificationString = global.functions.genRandomString(32)
         addConfirmationStringToUser(jUser.id, sVerificationString)
         sVerificationHTML = sVerificationHTML.replace('{{verification-link}}', 'http://localhost:3333/users/verify-email/' + sVerificationString)

@@ -5,7 +5,8 @@ router.get('/get-user/:username', (req, res, next) => {
     const sUsername = req.params.username
     usersController.getUserByUserName(sUsername, (err, jUser)=>{
         if(err){
-
+            console.log(err)
+            return res.send(err)
         }
         return res.send(jUser)
     })
@@ -24,7 +25,7 @@ router.get('/get-team-invites-count/:username', (req, res) => {
 router.get('/get-listed-users', (req, res) => {
     usersController.getListedUsers((err, ajUsers)=>{
         if(err){
-
+            
         }
         return res.send(ajUsers)
     });
@@ -130,7 +131,7 @@ router.get('/verify-email/:verificationstring', (req, res) => {
         if(err){
 
         }
-        const sFilePath = global.path.join(__dirname, '../', 'email-verified.html');
+        const sFilePath = global.path.join(__dirname, '../', '/views/email-verified.html');
         global.fs.readFile(sFilePath, 'utf8', (err, sHTML) => {
             if(err){
                 console.log('err', err)

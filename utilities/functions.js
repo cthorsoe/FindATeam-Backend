@@ -1,7 +1,8 @@
 const crypto = require('crypto')
 const moment = require('moment')
 
-let jFunctions = {};
+let jFunctions = {}
+const jError = {}
 
 jFunctions.formatDate = date => {
     return moment(date).format('DD-MM-YYYY');
@@ -26,7 +27,7 @@ jFunctions.sha512 = function(sInput, sSalt){
 };
   
 jFunctions.createSaltHash = function(sInput) {
-    var sSalt = jFunctions.genRandomString(16) /** Gives us salt of length 16 */
+    var sSalt = jFunctions.genRandomString(16) /** Returns salt of length 16 */
     var jSaltHash = jFunctions.sha512(sInput, sSalt)
     return jSaltHash
 }
@@ -69,6 +70,17 @@ jFunctions.prepareTeamsWithMembers = ajTeams => {
       
     }
     return ajPreparedTeams;
+}
+
+jFunctions.createError = (sCode, sDescription, sMessage, jError = {}) => {
+    jError = {
+        status: 'ERROR',
+        errorCode: sCode,
+        errorDescription: sDescription,
+        errorMsg: sMessage,
+        errorObj: jError
+    }
+    return jError
 }
 
 module.exports = jFunctions;
