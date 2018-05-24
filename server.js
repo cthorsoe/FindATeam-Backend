@@ -39,13 +39,21 @@ app.get('/', (req, res) => {
     })
 })
 
-io.on('connection', function(socket){
-    sMessage = 'a user connected ' + socket.id;
-    console.log(sMessage);
-    
-    socket.on('button clicked', function(msg){
-       console.log(msg);
-       // io.emit('message', { msg: sMessage });
-       socket.broadcast.emit('message', { msg: msg.msg });
+io.on('connection', (socket) => {
+    console.log('user connected');
+
+    socket.on('disconnect', function(){
+        console.log('user disconnected');
     });
- });
+
+    socket.on('on invite', function(invite){
+        console.log('INVITE', invite);
+        console.log('emitting', 'user invited');
+        // io.emit('message', { msg: sMessage });
+        io.emit('user invited', {type:'new-invite', userId: invite.userId, teamId: invite.teamId});    
+    });
+});
+
+http.listen(5000, () => {
+    console.log('started on port 5000');
+});
