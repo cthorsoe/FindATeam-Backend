@@ -4,18 +4,26 @@
   "description": "",
   "main": "server.js",
   "dependencies": {
-    "express":"4.16.3",
-    "cors":"2.8.4",
-    "mysql":"2.15.0",
-    "moment":"2.22.1",
-    "body-parser":"1.18.2",
-    "crypto":"1.0.1",
-    "nodemailer":"4.6.4",
-    "request":"2.86.0"
+    "body-parser": "1.18.2",
+    "cors": "2.8.4",
+    "crypto": "1.0.1",
+    "dotenv": "5.0.1",
+    "express": "4.16.3",
+    "moment": "2.22.1",
+    "mysql": "2.15.0",
+    "nodemailer": "4.6.4",
+    "request": "2.86.0",
+    "passport-openid": "^0.4.0",
+    "steam-web": "0.4.0"
+},
+"devDependencies": {
+    "passport": "^0.3.2",
+    "express-session": "^1.13.0"
+      
   },
   "scripts": {
-        "start": "nodemon server.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

@@ -12,6 +12,14 @@ router.get('/get-user/:username', (req, res, next) => {
     })
 });
 
+router.get('/avatar/:username', (req, res, next) => {
+    const sUsername = req.params.username
+    usersController.getUserAvatar(sUsername, (err, imgAvatar) => {
+        res.writeHead(200, {'Content-Type': 'image/jpeg' });
+        return res.end(imgAvatar, 'binary');
+    })
+});
+
 router.get('/get-team-invites-count/:username', (req, res) => {
     const sUsername = req.params.username
     usersController.getTeamInvitesCount(sUsername, (err, jInvites)=>{
@@ -71,7 +79,6 @@ router.post('/login', (req, res) => {
     }
     usersController.tryLogin(jLoginForm, (err, jUser) => {
         if(err){
-
         }
         return res.send(jUser)
     })
@@ -85,7 +92,7 @@ router.post('/login-by-session', (req, res) => {
     }
     usersController.tryLoginBySession(jSessionData, (err, jData) => {
         if(err){
-
+            return res.send('ERROR')
         }
         return res.send(jData)
     })
@@ -157,5 +164,7 @@ router.get('/sendsms', (req, res) => {
 
     return res.send('ok')
 })
+
+
 
 module.exports = router
