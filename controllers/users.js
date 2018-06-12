@@ -1,10 +1,10 @@
 const nodemailer = require('nodemailer')
 
-let usersController = {}
-let sQuery = "";
-let aParams = [];
-let jError = {};
-let jSuccess = { status: 'success'}
+var usersController = {}
+var sQuery = "";
+var aParams = [];
+var jError = {};
+var jSuccess = { status: 'success'}
 
 usersController.createUser = (jUser, fCallback)=>{
     if(jUser.password == jUser.passwordConfirm){
@@ -15,7 +15,7 @@ usersController.createUser = (jUser, fCallback)=>{
         delete jUser.password
         delete jUser.passwordConfirm
         
-        const sQuery = 'INSERT INTO users SET ?'
+        sQuery = 'INSERT INTO users SET ?'
         db.query(sQuery, jUser, (err, jResult) => {
             if(err){
                 return fCallback(true)
@@ -94,6 +94,29 @@ usersController.getTeamInvitesCount = (sUsername, fCallback)=>{
     }
     return fCallback(true);
   })
+}
+
+usersController.getTeamInvites = (sUsername, fCallback)=>{
+    aParams = [true, false, sUsername]
+    sQuery = `SELECT teams.id AS teamId, teams.name, users.id AS userId, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.phone 
+                    FROM teams 
+                    INNER JOIN teamusers ON teamusers.team = teams.id AND teamusers.useraccepted = ?
+                    INNER JOIN users ON users.id = teamusers.user 
+                    WHERE teams.id IN   (SELECT teams.id 
+                                        FROM teams 
+                                        INNER JOIN teamusers ON teams.id = teamusers.team
+                                        INNER JOIN users ON users.id = teamusers.user
+                                        WHERE teamusers.useraccepted = ? AND users.username = ?) 
+                    ORDER BY teams.id`
+    db.query(sQuery, aParams, (err, result) => {
+        if (err){
+            console.log('ERR', err);
+            return fCallback(true)
+        }
+        ajPreparedTeams = global.functions.prepareTeamsWithMembers(result);
+        // return res.send(ajPreparedTeams);
+        return fCallback(false, ajPreparedTeams)
+    })
 }
 
 usersController.getListedUsers = (fCallback)=>{
@@ -219,6 +242,37 @@ usersController.getMyTeams = (sUsername, fCallback) => {
     })
 }
 
+usersController.acceptTeamInvite = (jInvite, fCallback)=>{
+    aParams = [true /*SHOULD BE TRUE*/, jInvite.teamId, jInvite.userId];
+    sQuery = 'UPDATE teamusers SET teamusers.useraccepted = ? WHERE teamusers.team = ? AND teamusers.user = ?';
+    db.query(sQuery, aParams, (err, jResult) => {
+        if(err){
+            console.log('ERROR ACCEPT TEAM INVITE UPDATE STATEMENT')
+            return fCallback(true)
+        }
+        console.log('jResult', jResult);
+        if(jResult.affectedRows == 1){
+            sQuery =   `SELECT teams.id AS teamId, teams.name, users.id AS userId, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.phone 
+                        FROM teams 
+                        INNER JOIN teamusers ON teamusers.team = teams.id
+                        INNER JOIN users ON users.id = teamusers.user
+                        WHERE teams.recruiting = true && teamusers.useraccepted = true && teams.id = ?
+                        ORDER BY teams.id`
+                db.query(sQuery, jInvite.teamId, (err, ajTeams) => {
+                    if(err){
+                        console.log('ERROR ACCEPT TEAM INVITE SELECT STATEMENT')
+                        return fCallback(true)
+                    }
+                    ajPreparedTeams = global.functions.prepareTeamsWithMembers(ajTeams);
+                    return fCallback(false, ajPreparedTeams)
+                })
+        }else{
+            console.log('AFFECTED ROWS NOT EQUAL TO 1')
+            return fCallback(true)
+        }
+    })
+}
+
 usersController.verifyUserEmail = (sVerificationString, fCallback) =>{
     aParams = [true, sVerificationString];
     sQuery = 'UPDATE users SET emailconfirmed = ? WHERE emailconfirmstring = ?'
@@ -247,6 +301,21 @@ usersController.verifyUserPhone = (sCodeInput, iUserId, fCallback) => {
         }
         return fCallback(true)
     })
+}
+
+usersController.sendTeamInvite = (jInvite, fCallback) => {
+    aParams = [jInvite.user.id, jInvite.team.id, false]
+    sQuery =   `INSERT INTO teamusers (user, team, useraccepted)
+                VALUES (?, ?, ?)`
+        db.query(sQuery, aParams, (err, jResult) => {
+            if(err){
+                return fCallback(true)
+            }
+            if(jResult.affectedRows == 1){
+                return fCallback(false)
+            }
+            return fCallback(true)
+        }) 
 }
 
 usersController.sendSMS = () => {

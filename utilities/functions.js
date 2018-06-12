@@ -1,8 +1,8 @@
 const crypto = require('crypto')
 const moment = require('moment')
 
-let jFunctions = {}
-const jError = {}
+var jFunctions = {}
+const jError = {} // ??
 
 jFunctions.formatDate = date => {
     return moment(date).format('DD-MM-YYYY');

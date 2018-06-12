@@ -1,6 +1,6 @@
-let teamsController = {}
-let sQuery = "";
-let aParams = []
+var teamsController = {}
+var sQuery = "";
+var aParams = []
 
 teamsController.getTeam = (iTeamId, fCallback) => {
     sQuery =   `SELECT teams.id AS teamId, teams.name, users.id AS userId, users.firstname, users.lastname, users.username, users.dateofbirth, users.email, users.playerrole, users.avatar, users.phone 

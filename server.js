@@ -10,6 +10,7 @@ const cors = require('cors') // To allow requests from different domains.
 
 const usersRouter = require('./routes/users');
 const teamsRouter = require('./routes/teams');
+const usersController = require('./controllers/users')
 
 global.db = require('./utilities/db');
 global.functions = require('./utilities/functions');
@@ -46,11 +47,17 @@ io.on('connection', (socket) => {
         console.log('user disconnected');
     });
 
-    socket.on('on invite', function(invite){
-        console.log('INVITE', invite);
+    socket.on('on invite', function(jInvite){
+        console.log('INVITE', jInvite);
         console.log('emitting', 'user invited');
-        // io.emit('message', { msg: sMessage });
-        io.emit('user invited', {type:'new-invite', userId: invite.userId, teamId: invite.teamId});    
+        usersController.sendTeamInvite(jInvite, (err) => {
+            if(err){
+                console.log('ERROR adding team invite to database', err)
+            }
+            jInvite.type = 'new-invite';
+            io.emit('user invited', jInvite);
+        })
+        
     });
 });
 
