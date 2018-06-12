@@ -18,6 +18,7 @@ usersController.createUser = (jUser, fCallback)=>{
         sQuery = 'INSERT INTO users SET ?'
         db.query(sQuery, jUser, (err, jResult) => {
             if(err){
+                console.log('err', err)
                 return fCallback(true)
             }
             if(jResult.affectedRows == 1){
@@ -36,15 +37,50 @@ usersController.createUser = (jUser, fCallback)=>{
 }
 
 usersController.updateUser = (jUser, fCallback)=>{
-    aParams = [jUser.firstname, jUser.lastname, jUser.email, jUser.dateofbirth, jUser.playerrole, jUser.phone, jUser.description, jUser.username];
-    sQuery = 'UPDATE users SET firstname = ?, lastname = ?, email = ?, dateofbirth = ?, playerrole = ?, phone = ?, description = ? WHERE username = ?'
-    db.query(sQuery, aParams, (err, jResult) => {
-        console.log(jResult);
-        if(jResult.affectedRows == 1){
-            return fCallback(false, jResult)
-        }
-        return fCallback(true)
-    })
+    jUser.dateofbirth = global.functions.formatDate(jUser.dateofbirth, 'YYYY-MM-DD')
+    console.log('UPDATE', jUser);
+    let sAvatarPath = null;
+    if(jUser.uploadedImage != null && jUser.uploadedImage.indexOf('base64') > -1){
+        var base64Data = jUser.uploadedImage.replace(/^data:image\/png;base64,/, "");
+        var base64Data = jUser.uploadedImage.replace(/^data:image\/jpeg;base64,/, "");
+        sAvatarPath = 'images/avatars/' + global.functions.genRandomString(32) + '.jpg';
+        global.fs.writeFile(sAvatarPath, base64Data, 'base64', function(err) {
+            console.log(err);
+            if(err){
+                return fCallback(true)
+            }
+            aParams = [jUser.firstname, jUser.lastname, jUser.email, jUser.dateofbirth, jUser.playerrole, jUser.phone, jUser.description, sAvatarPath, jUser.username];
+            sQuery = 'UPDATE users SET firstname = ?, lastname = ?, email = ?, dateofbirth = ?, playerrole = ?, phone = ?, description = ?, avatar = ? WHERE username = ?'
+            db.query(sQuery, aParams, (err, jResult) => {
+                if(err){
+                    console.log('err', err)
+                    return fCallback(true)
+                }
+                console.log(jResult);
+                if(jResult.affectedRows == 1){
+                    return fCallback(false, jResult)
+                }
+                console.log('AFFECTED ROWS DIDNT MATCH')
+                return fCallback(true)
+            })
+        });
+    }else{
+        aParams = [jUser.firstname, jUser.lastname, jUser.email, jUser.dateofbirth, jUser.playerrole, jUser.phone, jUser.description, sAvatarPath, jUser.username];
+        sQuery = 'UPDATE users SET firstname = ?, lastname = ?, email = ?, dateofbirth = ?, playerrole = ?, phone = ?, description = ?, avatar = ? WHERE username = ?'
+        db.query(sQuery, aParams, (err, jResult) => {
+            if(err){
+                console.log('err', err)
+                return fCallback(true)
+            }
+            console.log(jResult);
+            if(jResult.affectedRows == 1){
+                return fCallback(false, jResult)
+            }
+            console.log('AFFECTED ROWS DIDNT MATCH')
+            return fCallback(true)
+        })
+    }
+    
 }
 
 usersController.deleteUser = (sUsername, fCallback)=>{
@@ -131,16 +167,19 @@ usersController.getListedUsers = (fCallback)=>{
 }
 
 usersController.listUser = (jUser, fCallback)=>{
+    jUser.dateofbirth = global.functions.formatDate(jUser.dateofbirth, 'YYYY-MM-DD')
     aParams = [jUser.firstname, jUser.lastname, jUser.email, jUser.dateofbirth, jUser.playerrole, jUser.description, 1, jUser.username]
     sQuery = 'UPDATE users SET users.firstname = ?, users.lastname = ?, users.email = ?, users.dateofbirth = ?, users.playerrole = ?, users.description = ?, users.available = ? WHERE users.username = ?'
     db.query(sQuery, aParams, (err, jResult) => {
         if(err){
+            console.log('err', err)
             return fCallback(true)
         }
         console.log(jResult);
         if(jResult.affectedRows == 1){
             return fCallback(false, jResult)
         }else{
+            console.log('AFFECTED ROWS DIDNT MATCH')
             return fCallback(true)
         }
     })  
@@ -158,6 +197,7 @@ usersController.tryLogin = (jLoginForm, fCallback)=>{
         return fCallback(true)
       }
       if(ajUsers.length == 1){
+        console.log('LENGTH IS 1')
         const jUser = ajUsers[0]
         const sInputHash = global.functions.sha512(jLoginForm.password, jUser.passwordsalt).hash;
         if(sInputHash == jUser.passwordhash){
@@ -166,6 +206,7 @@ usersController.tryLogin = (jLoginForm, fCallback)=>{
             sQuery = 'INSERT INTO loginsessions SET sessionhash = ?, user = ?'
             db.query(sQuery, aParams, (err, jData) => {
                 if(err){
+                    console.log(err, 'ERR')
                     return fCallback(true)
                 }
                 if(jData.affectedRows == 1){
@@ -199,6 +240,7 @@ usersController.tryLoginBySession = (jSessionData, fCallback)=>{
             if(sInputHash == jUser.sessionhash){
                 delete jUser.sessionId
                 delete jUser.sessionhash
+                console.log('jUser', jUser);
                 return fCallback(false, jUser)
             }else{
                 return fCallback(true)
@@ -307,15 +349,35 @@ usersController.sendTeamInvite = (jInvite, fCallback) => {
     aParams = [jInvite.user.id, jInvite.team.id, false]
     sQuery =   `INSERT INTO teamusers (user, team, useraccepted)
                 VALUES (?, ?, ?)`
-        db.query(sQuery, aParams, (err, jResult) => {
-            if(err){
-                return fCallback(true)
-            }
-            if(jResult.affectedRows == 1){
-                return fCallback(false)
-            }
+    db.query(sQuery, aParams, (err, jResult) => {
+        if(err){
             return fCallback(true)
-        }) 
+        }
+        if(jResult.affectedRows == 1){
+            return fCallback(false)
+        }
+        return fCallback(true)
+    }) 
+}
+usersController.getUserAvatar = (sUsername, fCallback) => {
+    sQuery = 'SELECT users.avatar FROM users WHERE users.username = ?'
+    db.query(sQuery, sUsername, (err, jResult) => {
+        if(err){
+            return fCallback(true)
+        }
+        console.log(jResult);
+        if(jResult.length > 0){
+            jResult = jResult[0];
+            if(jResult.avatar == null){
+                jResult.avatar = '/images/avatars/unknown.jpg';
+            }
+            fs.readFile(global.path.join(__dirname, '../', jResult.avatar), (err, imgAvatar) => {
+                return fCallback(false, imgAvatar);
+            });
+
+        }
+        // return fCallback(false, jResult)
+    })
 }
 
 usersController.sendSMS = () => {
@@ -343,7 +405,7 @@ const sendVerificationEmail = (jUser) =>{
     global.fs.readFile(sFilePath, 'utf8', (err, sVerificationHTML) => {
         const sVerificationString = global.functions.genRandomString(32)
         addConfirmationStringToUser(jUser.id, sVerificationString)
-        sVerificationHTML = sVerificationHTML.replace('{{verification-link}}', 'http://localhost:3333/users/verify-email/' + sVerificationString)
+        sVerificationHTML = sVerificationHTML.replace('{{verification-link}}', 'https://api.cthorsoe.host/users/verify-email/' + sVerificationString)
         
         const mailOptions = {
             from: 'Team Up! <teamupwebsite@gmail.com>',
