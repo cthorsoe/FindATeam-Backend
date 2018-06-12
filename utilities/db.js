@@ -9,4 +9,4 @@ const db = mysql.createConnection({
     database:"find-a-team"
 })
 
-  module.exports = db
+module.exports = db

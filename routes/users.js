@@ -22,6 +22,16 @@ router.get('/get-team-invites-count/:username', (req, res) => {
     })
 });
 
+router.get('/get-team-invites/:username', (req, res) => {
+    const sUsername = req.params.username
+    usersController.getTeamInvites(sUsername, (err, jInvites)=>{
+        if(err){
+
+        }
+        return res.send(jInvites)
+    })
+});
+
 router.get('/get-listed-users', (req, res) => {
     usersController.getListedUsers((err, ajUsers)=>{
         if(err){
@@ -32,7 +42,7 @@ router.get('/get-listed-users', (req, res) => {
 });
 
 router.post('/create-user', (req, res) => {
-    let jUser = req.body
+    /*let*/const jUser = req.body
     usersController.createUser(jUser, (err, jResult) => {
         if(err){
 
@@ -156,6 +166,25 @@ router.get('/sendsms', (req, res) => {
     usersController.sendSMS()
 
     return res.send('ok')
+})
+
+router.post('/accept-team-invite', (req, res) => {
+    const jInvite = req.body;
+    usersController.acceptTeamInvite(jInvite, (err, jResult) => {
+        if(err){
+            console.log('ERROR', err);    
+            return res.send('ERROR')
+        }
+        console.log('jInvite', jInvite);
+        return res.send(jInvite);
+    })
+    // const jVerifyPhoneForm = req.body;
+    // usersController.verifyUserPhone(jVerifyPhoneForm.code, jVerifyPhoneForm.id, (err, jResult) => {
+    //     if(err){
+    //         return res.send('FAIL')
+    //     }
+    //     return res.send('VERIFIED')
+    // })
 })
 
 module.exports = router
